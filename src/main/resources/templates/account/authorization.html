@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en"  xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <script src="../static/layui/layui.js" data-th-src="@{/layui/layui.js}"></script>
+    <script data-th-replace="public::config"></script>
+    <link rel="stylesheet" data-th-href="@{/layui/css/layui.css}" href="../static/layui/css/layui.css">
+    <style>
+        body{
+            padding-right: 15px;
+            padding-top: 15px;
+        }
+    </style>
+</head>
+<body>
+<form class="layui-form" >
+    <input type="hidden" data-th-value="${id}" id="accountId" name="id">
+    <div class="layui-form-item">
+        <label class="layui-form-label">选择权限</label>
+        <div class="layui-input-block">
+            <div id="LAY-auth-tree-index"></div>
+        </div>
+    </div>
+
+    <div class="layui-form-item">
+        <div class="layui-input-block">
+            <button class="layui-btn" lay-submit lay-filter="formSubmit">保存</button>
+            <button type="reset" class="layui-btn layui-btn-primary">重置</button>
+        </div>
+    </div>
+</form>
+<script data-th-inline="javascript">
+
+    layui.use(['form','jquery','authtree'], function(){
+        let {form,$,authtree} = layui;
+        //得到账户Id
+        let accountId =document.getElementById("accountId").value;
+
+        $.get(`[(@{/account/authorization})]/${accountId}`,function (rs) {
+            var trees = authtree.listConvert(rs.data.list, {
+                primaryKey: 'id'
+                ,startPid: -1
+                ,parentKey: 'aid'
+                ,nameKey: 'name'
+                ,valueKey: 'id'
+                ,checkedKey: rs.data.checkedId
+            });
+            authtree.render('#LAY-auth-tree-index', trees, {
+                inputname: 'resourceIds',
+                layfilter: 'lay-check-auth',
+                autowidth: true,
+                openall:true
+            });
+        },'json');
+
+        //监听提交
+        form.on('submit(formSubmit)', function(data){
+            data.field.resourceIds=authtree.getChecked('#LAY-auth-tree-index');
+            let  index=layer.load(2,{shade:0.3});
+            console.log(accountId+data.field.resourceIds);
+            $.ajax({
+                url:/*[[@{/account/authorization}]]*/ '/save',
+                type:'put',
+                data:data.field,
+                dataType:'json',
+                success:function (rs) {
+                    layer.close(index);
+                    if (rs.code==0){
+                        var index = parent.layer.getFrameIndex(window.name); //获取窗口索引
+                        parent.layer.close(index);//关闭当前窗口
+                        parent.layer.msg(rs.msg,{icon:6});//在父页面弹出提示框
+                        parent.layui.table.reload('table_reload');//重载父页面的数据
+                    }else {
+                        layer.close(index);
+                        layer.msg(rs.msg,{icon:5});
+                    }
+                }
+            });
+            return false;
+        });
+    });
+</script>
+</body>
+</html>

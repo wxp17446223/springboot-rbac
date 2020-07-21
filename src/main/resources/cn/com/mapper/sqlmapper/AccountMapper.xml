@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.com.mapper.AccountMapper">
+    <resultMap id="BASIC_RESULT_MAP" type="Account">
+        <id property="id" column="id"/>
+        <result property="account" column="account"/>
+        <result property="password" column="password"/>
+        <collection property="resources" ofType="cn.com.bean.PResource" select="cn.com.mapper.ResourceMapper.findByAccountId" column="id"/>
+    </resultMap>
+    <sql id="BASIC_COLUMNS">
+         id,account,password
+    </sql>
+    <sql id="BASIC_WHERE">
+        <if test="id !=null">
+            and id=#{id}
+        </if>
+        <if test="account !=null and account !=''">
+            and account=#{account}
+        </if>
+        <if test="password !=null and password !=''">
+            and password= MD5(#{password})
+        </if>
+
+    </sql>
+     <sql id="BASIC_INSERT_COLUMNS">
+       <trim suffixOverrides=",">
+        <if test="id !=null">
+            id,
+        </if>
+        <if test="account !=null and account !=''">
+            account,
+        </if>
+        <if test="password !=null and password !=''">
+            password,
+        </if>
+       </trim>
+     </sql>
+     <sql id="BASIC_INSERT_VALUES">
+        <trim suffixOverrides=",">
+        <if test="id !=null">
+            #{id},
+        </if>
+        <if test="account !=null and account !=''">
+            #{account},
+        </if>
+        <if test="password !=null and password !=''">
+            MD5(#{password}),
+        </if>
+        </trim>
+    </sql>
+    <sql id="BASIC_UPDATE">
+        <if test="id !=null">
+            id=#{id},
+        </if>
+        <if test="account !=null and account !=''">
+            account=#{account},
+        </if>
+        <if test="password !=null and password !=''">
+            password=MD5(#{password}),
+        </if>
+    </sql>
+
+
+    <select id="findAll" resultMap="BASIC_RESULT_MAP" parameterType="Account">
+        select <include refid="BASIC_COLUMNS"></include>
+        from account
+        <where>
+            <include refid="BASIC_WHERE"></include>
+        </where>
+
+    </select>
+    <insert id="insertAccount" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
+        insert into account(<include refid="BASIC_INSERT_COLUMNS"></include>)
+        values (<include refid="BASIC_INSERT_VALUES"></include>)
+    </insert>
+
+    <update id="updateAccount" parameterType="Account">
+        update account
+        <set>
+            <include refid="BASIC_UPDATE"></include>
+        </set>
+        where id=#{id,jdbcType=INTEGER}
+    </update>
+    <delete id="deleteByIds">
+        delete from account
+        <where>
+            <foreach collection="ids" item="id" separator="," close=")" open="id in (">
+                #{id}
+            </foreach>
+        </where>
+    </delete>
+    <select id="findById" resultMap="BASIC_RESULT_MAP">
+        select <include refid="BASIC_COLUMNS"></include>
+        from account
+        where id=#{id}
+    </select>
+    <select id="selectByExample" parameterType="Account" resultMap="BASIC_RESULT_MAP">
+           select <include refid="BASIC_COLUMNS"></include>
+           from account
+           <where>
+            <include refid="BASIC_WHERE"></include>
+           </where>
+           <if test="page != null or limit != null">
+                 limit #{page},#{limit}
+            </if>
+    </select>
+</mapper>

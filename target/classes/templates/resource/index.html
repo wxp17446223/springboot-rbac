@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf,org">
+<head>
+    <meta charset="UTF-8">
+    <script src="../static/layui/layui.js" data-th-src="@{/layui/layui.js}"></script>
+    <link rel="stylesheet" data-th-href="@{/layui/css/layui.css}" href="../static/layui/css/layui.css">
+    <style>
+        .layui-breadcrumb{
+            line-height:30px;
+        }
+    </style>
+</head>
+<body>
+<script type="text/html" id="toolbarDemo">
+    <div class="layui-btn-container">
+        <button class="layui-btn layui-btn-sm" lay-event="add">
+            <i class="layui-icon layui-icon-add-circle"></i> 新增资源
+        </button>
+        <button class="layui-btn layui-btn-sm" lay-event="del">
+            <i class="layui-icon layui-icon-delete"></i> 批量删除
+        </button>
+    </div>
+</script>
+<script type="text/html" id="barDemo">
+    <a class="layui-btn layui-btn-xs" lay-event="add">
+        <i class="layui-icon layui-icon-add-circle"></i> 新增
+    </a>
+    <a class="layui-btn layui-btn-xs" lay-event="edit">
+        <i class="layui-icon layui-icon-edit"></i> 编辑
+    </a>
+    <a class="layui-btn layui-btn-danger layui-btn-xs" lay-event="del">
+        <i class="layui-icon layui-icon-delete"></i>删除
+    </a>
+</script>
+<div class="layui-fluid">
+    <div class="layui-row">
+        <div class="layui-col-md12">
+            <span class="layui-breadcrumb">
+                 <a data-th-href="@{/}">首页</a>
+                 <a href="javascript:;">权限管理</a>
+                 <a><cite>资源管理</cite></a>
+           </span>
+        </div>
+    </div>
+    <div class="layui-row">
+        <div class="layui-col-md12">
+            <form class="layui-form" action="">
+                <div class="layui-inline">
+                    <label class="layui-form-label">资源名称：</label>
+                    <div class="layui-input-inline">
+                        <input type="text" name="name" required placeholder="请输入资源名称" autocomplete="off" class="layui-input">
+                    </div>
+                </div>
+
+                <div class="layui-inline">
+                    <div class="layui-input-inline">
+                        <button class="layui-btn" lay-submit lay-filter="query">
+                            <i class="layui-icon layui-icon-search"></i>
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+    <div class="layui-row">
+        <div class="layui-col-md12">
+            <table class="layui-hide" id="table_data" lay-filter="table_filter"></table>
+        </div>
+    </div>
+</div>
+
+    <script data-th-inline="javascript">
+        layui.use(["table","layer","jquery","element","form"],function () {
+            // let table=layui.table;
+            let {table,layer,$,form}=layui;//解构
+
+            table.render({
+                id:'table_reload',
+                elem:'#table_data',
+                limit:10,
+                limits:[10,15,20],
+                url:/*[[@{/resource}]]*/ '/data/resource.json',
+                cellMinWidth: 80, //全局定义常规单元格的最小宽度
+                toolbar: '#toolbarDemo', //开启头部工具栏，并为其绑定左侧模板
+                cols:[
+                    [
+                        {fixed: 'left',width:80,type: 'checkbox'},
+                        {field:'id', width:80, title: 'ID', sort: true}
+                        ,{width:150, title: '父资源名称',templet:function (d) {
+                            return d.parent?d.parent.name:'-';
+                        }}
+                        ,{field:'name', width:150, title: '资源名称'}
+                        ,{field:'url', title: '资源路径', sort: true}
+                        ,{title: '资源权限',templet:function (d) {
+                            let split = d.authority.split(",");
+                            return split.map(authority=>{
+                                let color='';
+                                let text='';
+                                switch(authority){
+                                    case 'c':color='layui-bg-green';text='创建';break;
+                                    case 'u':color='layui-bg-orange';text='修改'; break;
+                                    case 'r':color='layui-bg-blue';text='查询';break;
+                                    case 'd':color='';text='删除';break;
+                                }
+                               return `<span class="layui-badge ${color}">${text}</span>&emsp;`;
+                            }).join("");
+                        }}
+                        ,{title: '资源类型',width:100,templet:function (d) {
+                            return`<span class="layui-badge layui-bg-${d.type==0?'green':'blue'}">${d.type==0?'功能':'菜单'}</span>`;
+                        }}
+                        ,{fixed: 'right', title:'操作', toolbar: '#barDemo', width:250}
+                    ]
+                ],
+                page: true
+            });
+            //监听查询操作
+            form.on("submit(query)",function (e) {
+                //重载表格
+                table.reload("table_reload",{
+                    where:e.field
+                });
+                return false;
+            });
+
+            //监听头工具栏事件
+            // 事件名：toolbar
+            // 过滤器：table_filter
+            table.on('toolbar(table_filter)', function(e){
+                if (e.event=='add'){
+                    //iframe层-父子操作
+                    layer.open({
+                        type: 2,
+                        area: ['420px', '400px'],
+                        fixed: false, //不固定
+                        maxmin: false,
+                        content: /*[[@{/resource/edit}]]*/ 'test/iframe.html'
+                    });
+                }else if (e.event=='del'){
+                    let status = table.checkStatus('table_reload'); //table_reload 即为基础参数 id 对应的值
+                    if (status.data.length==0) {
+                        layer.msg("请选择需要删除的资源！");
+                    }else {
+                        //将选中的对象转换为资源数组，然后将资源数组使用逗号分隔转换成字符串
+                        // [{name:'user1',id:1},{name:'user2',id:2}] => "user1,user2"
+                        let resourceList=status.data.map(d=>d.name).join(",");
+                        // [{name:'user1',id:1},{name:'user2',id:2}] => "id=1&id=2"
+                        let ids=status.data.map(d=>'id='+d.id).join('&');
+                        del(`确认是否删除资源：[${resourceList}]?`,ids);
+                    }
+
+                }
+            });
+
+            //监听行工具事件
+            table.on('tool(table_filter)', function(e){
+                switch (e.event) {
+                    case "add":
+                        layer.open({
+                            type: 2,
+                            area: ['420px', '500px'],
+                            fixed: false, //不固定
+                            maxmin: false,
+                            content: '[(@{/resource/edit})]?aid='+e.data.id
+                        });
+                        break;
+                    case "edit":
+                        layer.open({
+                            type: 2,
+                            area: ['420px', '400px'],
+                            fixed: false, //不固定
+                            maxmin: false,
+                            content: '[(@{/resource/edit})]/'+e.data.id
+                        });
+                        break;
+                    case "del":
+                        del(`确认是否删除资源：[${e.data.name}]?`,`id=${e.data.id}`);
+                }
+            });
+
+            //删除操作函数
+            function del(message,parameter ) {
+                //询问框
+                layer.confirm(message,{icon:3,title:'温馨提示'}, function(){
+                    //显示正在加载动画，并且设定最长等待10秒
+                    var index = layer.load(2,{shade:0.3}, {time: 10*1000} );
+                    $.ajax({
+                        url:'[(@{/resource})]?'+parameter,
+                        type:'delete',
+                        dataType:'json',
+                        success:function (rs) {
+                            //关闭正在加载动画
+                            layer.close(index);
+                            if (rs.code==0){
+                                // e.del(); //删除对应行(tr)的DOM结构并更新缓存
+                                layer.msg(rs.msg,{icon:6,title:'温馨提示'});//在页面弹出提示框
+                                layui.table.reload('table_reload');//重载页面的数据(主要是分页的条数)
+                            }else {
+                                layer.msg(rs.msg,{icon:5,title:'温馨提示'});
+                            }
+                        }
+                    });
+                }, function(){
+                    layer.msg('取消删除，20s自动关闭', {
+                        time: 20000, //20s后自动关闭
+                        btn: ['明白了', '知道了']
+                    });
+                });
+            }
+
+
+
+        })
+    </script>
+</body>
+</html>

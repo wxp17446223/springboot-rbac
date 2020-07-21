@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.com.mapper.ResourceMapper">
+  <resultMap id="BaseResultMap" type="cn.com.bean.PResource">
+    <id column="id" jdbcType="INTEGER" property="id" />
+    <result column="name" jdbcType="VARCHAR" property="name" />
+    <result column="aid" jdbcType="INTEGER" property="aid" />
+    <result column="type" jdbcType="INTEGER" property="type" />
+    <result column="url" jdbcType="VARCHAR" property="url" />
+    <result column="authority" jdbcType="VARCHAR" property="authority" />
+    <association property="parent" column="aid" select="selectEntityById"/>
+    <collection property="children" ofType="PResource" column="{aid=id}" select="findAll"/>
+
+
+  </resultMap>
+  <sql id="Base_Column_List">
+    id,aid, `name`, url,authority,type
+  </sql>
+  <sql id="Base_Insert_Columns">
+    <trim suffixOverrides=",">
+        <if test="id!=null">id,</if>
+        <if test="aid!=null">aid,</if>
+        <if test="type!=null">type,</if>
+        <if test="name!=null and name!=''">name,</if>
+        <if test="authority!=null and authority!=''">authority,</if>
+        <if test="url!=null and url!=''">url,</if>
+    </trim>
+  </sql>
+  <sql id="Base_Insert_Values">
+    <trim suffixOverrides=",">
+        <if test="id!=null">#{id},</if>
+        <if test="aid!=null">#{aid},</if>
+        <if test="type!=null">#{type},</if>
+        <if test="name!=null and name!=''">#{name},</if>
+         <if test="authority!=null and authority!=''">#{authority},</if>
+        <if test="url!=null and url!=''">#{url},</if>
+    </trim>
+  </sql>
+  <sql id="Base_Update">
+    <trim suffixOverrides=",">
+        <if test="id!=null">id=#{id},</if>
+        <if test="aid!=null">aid=#{aid},</if>
+        <if test="type!=null">type=#{type},</if>
+        <if test="name!=null and name!=''">name=#{name},</if>
+        <if test="authority!=null and authority!=''">authority=#{authority},</if>
+        <if test="url!=null and url!=''">url=#{url},</if>
+    </trim>
+  </sql>
+    <sql id="Base_Where">
+    <trim suffixOverrides=",">
+        <if test="id!=null">and id=#{id}</if>
+         <if test="aid!=null">and aid=#{aid}</if>
+           <if test="type!=null">and type=#{type}</if>
+        <if test="name!=null and name!=''">and name=#{name}</if>
+        <if test="authority!=null and authority!=''">and authority=#{authority}</if>
+        <if test="url!=null and url!=''">and url=#{url}</if>
+    </trim>
+  </sql>
+
+  <select id="findAll" parameterType="PResource" resultMap="BaseResultMap">
+    select <include refid="Base_Column_List"></include>
+    from resource
+    <where>
+        <include refid="Base_Where"></include>
+    </where>
+  </select>
+
+
+ <select id="selectEntityById" parameterType="integer" resultType="PResource">
+    select <include refid="Base_Column_List"></include>
+    from resource
+    where id=#{id,jdbcType=INTEGER}
+  </select>
+
+  <select id="selectById" parameterType="integer" resultMap="BaseResultMap">
+    select <include refid="Base_Column_List"></include>
+    from resource
+    where id=#{id,jdbcType=INTEGER}
+  </select>
+
+  <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+    insert into resource(<include refid="Base_Insert_Columns"></include>)
+    values(<include refid="Base_Insert_Values"></include>)
+  </insert>
+
+  <update id="update" parameterType="PResource">
+    update resource
+    <set>
+        <include refid="Base_Update"></include>
+    </set>
+    where id=#{id}
+  </update>
+  <delete id="deleteByIds" >
+    delete from resource
+    <where>
+        <foreach collection="ids" open="id in (" close=")" separator="," item="id">
+         #{id,jdbcType=INTEGER}
+         </foreach>
+    </where>
+  </delete>
+   <select id="selectByExample" parameterType="Account" resultMap="BaseResultMap">
+           select <include refid="Base_Column_List"></include>
+           from resource
+           <where>
+            <include refid="Base_Where"></include>
+           </where>
+           <if test="page != null or limit != null">
+                 limit #{page},#{limit}
+            </if>
+    </select>
+
+    <select id="findByAccountId" parameterType="integer" resultType="PResource">
+        select <include refid="Base_Column_List"></include>
+        from resource
+        where id in (
+            select resource_id
+            from  account_resource_mapping
+            where account_id=#{accountId,jdbcType=INTEGER}
+        );
+    </select>
+
+    <delete id="deleteAuthorization" parameterType="integer">
+        delete from account_resource_mapping where account_id=#{accountId,jdbcType=INTEGER}
+    </delete>
+    <insert id="authorization" >
+        insert into account_resource_mapping(account_id, resource_id)
+        <foreach collection="resourceIds" item="resourceId" open="values" separator=",">
+            (#{accountId,jdbcType=INTEGER},#{resourceId,jdbcType=INTEGER})
+        </foreach>
+    </insert>
+</mapper>

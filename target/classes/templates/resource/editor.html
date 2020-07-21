@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en"  xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <script src="../static/layui/layui.js" data-th-src="@{/layui/layui.js}"></script>
+    <link rel="stylesheet" data-th-href="@{/layui/css/layui.css}" href="../static/layui/css/layui.css">
+    <style>
+        body{
+            padding-right: 15px;
+            padding-top: 15px;
+        }
+    </style>
+</head>
+<body>
+<form class="layui-form" >
+    <input type="hidden" data-th-value="${resource?.id}" name="id">
+    <input type="hidden" data-th-if="${resource?.parent}" data-th-value="${resource?.parent?.id}" name="aid">
+    <div class="layui-form-item" data-th-if="${resource?.parent}">
+        <label class="layui-form-label">父资源名称:</label>
+        <div class="layui-input-block">
+            <input type="text" readonly data-th-value="${resource?.parent?.name}" class="layui-input">
+        </div>
+    </div>
+    <div class="layui-form-item">
+        <label class="layui-form-label">资源名称:</label>
+        <div class="layui-input-block">
+            <input type="text" name="name" data-th-value="${resource?.name}" lay-verify="required" placeholder="请输入资源名称" autocomplete="off" class="layui-input">
+        </div>
+    </div>
+    <div class="layui-form-item">
+        <label class="layui-form-label">资源类型:</label>
+        <div class="layui-input-block">
+            <input type="radio" name="type" value="0" data-th-checked="${resource==null or resource?.type==null or resource?.type==0}" lay-verify="required" class="layui-input" title="功能">
+            <input type="radio" name="type" value="1" data-th-checked="${resource?.type==1}" lay-verify="required" class="layui-input" title="菜单  ">
+        </div>
+    </div>
+    <div class="layui-form-item">
+        <label class="layui-form-label">authority:</label>
+        <div class="layui-input-block">
+            <input type="checkbox" name="authority" value="c" data-th-checked="${#strings.arrayContains(resource?.authority,'c')}" lay-verify="required"  class="layui-input" title="创建">
+            <input type="checkbox" name="authority" value="d" data-th-checked="${#strings.arrayContains(resource?.authority,'d')}" lay-verify="required"  class="layui-input" title="删除">
+            <input type="checkbox" name="authority" value="u" data-th-checked="${#strings.arrayContains(resource?.authority,'u')}" lay-verify="required"  class="layui-input" title="修改">
+            <input type="checkbox" name="authority" value="r" data-th-checked="${#strings.arrayContains(resource?.authority,'r')}" lay-verify="required"  class="layui-input" title="读取">
+        </div>
+    </div>
+    <div cl
+    <div class="layui-form-item">
+        <label class="layui-form-label">资源路径:</label>
+        <div class="layui-input-block">
+            <input type="text" name="url" data-th-value="${resource?.url}" placeholder="请输入资源路径" autocomplete="off" class="layui-input">
+        </div>
+    </div>
+    <div class="layui-form-item">
+        <div class="layui-input-block">
+            <button class="layui-btn" lay-submit lay-filter="formSubmit">保存</button>
+            <button type="reset" class="layui-btn layui-btn-primary">重置</button>
+        </div>
+    </div>
+</form>
+<script data-th-inline="javascript">
+    layui.use(['form','jquery'], function(){
+        let {form,$} = layui;
+
+        //监听提交
+        form.on('submit(formSubmit)', function(data){
+            $.ajax({
+                url:/*[[@{/resource}]]*/ '/save',
+                type:'put',
+                data:data.field,
+                dataType:'json',
+                success:function (rs) {
+                    if (rs.code==0){
+                        var index = parent.layer.getFrameIndex(window.name); //获取窗口索引
+                        parent.layer.close(index);//关闭当前窗口
+                        parent.layer.msg(rs.msg,{icon:6});//在父页面弹出提示框
+                        parent.layui.table.reload('table_reload');//重载父页面的数据
+                    }else {
+                        layer.msg(rs.msg,{icon:5});
+                    }
+                }
+            })
+            return false;
+        });
+    });
+</script>
+</body>
+</html>

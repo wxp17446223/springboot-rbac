@@ -1,0 +1,13 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf,org">
+    <div data-th-fragment="config" data-th-remove="tag">
+        <script data-th-inline="javascript">
+            layui.config({
+                base: '[(@{/layui/extends/})]',
+            }).extend({
+                authtree: 'authtree/authtree',
+            });
+
+        </script>
+    </div>
+</html>
